@@ -18,6 +18,9 @@ add_library(oneapi_support SHARED
 
 target_link_libraries(oneapi_support
   mkl_sycl
+  # DFT component libraries needed for oneMKL DFT template instantiations
+  mkl_sycl_dft
+  mkl_cdft_core
   mkl_intel_ilp64
   mkl_sequential
   mkl_core
