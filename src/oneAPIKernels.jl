@@ -206,11 +206,14 @@ end
 
         props = oneAPI.oneL0.compute_properties(dev)
         module_props = oneAPI.oneL0.module_properties(dev)
-        # the sub-group width that `kernel_function` compiles for: 32, like a CUDA warp, if
-        # the device supports it, and 0 if the device has no sub-groups. Only widths of up to
-        # 64, so that `KI.sub_group_ballot` (a `UInt64` mask) covers every lane.
+        # the sub-group width that `kernel_function` compiles for: 16 if the device supports
+        # it, else the widest one, and 0 if the device has no sub-groups. Not 32: on Arc
+        # (DG2), IGC miscompiles kernels with emulated Float64 arithmetic at SIMD32 (a small
+        # stencil with Float64 coefficients on Float32 data gives wrong results at a required
+        # sub-group size of 32, but not at 8 or 16). Only widths of up to 64, so that
+        # `KI.sub_group_ballot` (a `UInt64` mask) covers every lane.
         sg_sizes = filter(<=(64), props.subGroupSizes)
-        sub_group_size = 32 in sg_sizes ? 32 : maximum(sg_sizes; init = 0)
+        sub_group_size = 16 in sg_sizes ? 16 : maximum(sg_sizes; init = 0)
         limits = (; max_work_group_size = props.maxTotalGroupSize,
                     max_work_group_dims = (props.maxGroupSizeX, props.maxGroupSizeY, props.maxGroupSizeZ),
                     max_num_groups = (props.maxGroupCountX, props.maxGroupCountY, props.maxGroupCountZ),
